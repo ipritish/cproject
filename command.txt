@@ -1,0 +1,1 @@
+gcc -I/usr/include/mysql file.c -L/usr/lib/mysql -lmysqlclient -o object_file
