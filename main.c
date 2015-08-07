@@ -22,9 +22,13 @@ int main(int argc, char **argv)
 
   if (mysql_query(con, "CREATE DATABASE work")) 
   {
-      fprintf(stderr, "%s\n", mysql_error(con));
-      mysql_close(con);
-      exit(1);
+      //fprintf(stderr, "%s\n", mysql_error(con));
+      //mysql_close(con);
+      //exit(1);
+      if (mysql_query(con,"Use work"))
+      {
+          //mysql_query();
+      }
   }
 
   mysql_close(con);
