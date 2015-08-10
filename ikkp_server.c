@@ -108,19 +108,10 @@ int main(int argc, char *argv[])
             if (say(connect_d,"Internet Knock-Knock Protocol Server\r\nVersion 1.0\r\nKnock!Knock!\r\n>") != -1)
             {
                 read_in(connect_d,buf,sizeof(buf));
-                if(strncasecmp("Who is there?",buf,12))
-                    say(connect_d,"You should say 'Who is there?'!");
-                else
-                {
-                    if(say(connect_d,"Oscar\r\n>") != -1)
-                    {
-                        read_in(connect_d,buf,sizeof(buf));
-                        if(strncasecmp("Oscar Who?",buf,10))
-                            say(connect_d,"You should say 'Oscar Who?'!");
-                        else
-                            say(connect_d,"Oscar silly question, you get silly answer\r\n");
-                    }
-                 }
+		//flush();
+                say(connect_d,strcat(buf,"\r\n>"));
+		//fflush();
+                
             }
             close(connect_d);
             exit(0);
