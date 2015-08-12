@@ -9,6 +9,11 @@
 
 int listener_d;
 
+struct connection_handler
+{
+    int id;
+    int connect_id;
+}con_handler[10];
 void handle_shutdown(int sig)
 {
     if(listener_d)
