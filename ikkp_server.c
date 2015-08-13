@@ -8,12 +8,24 @@
 #include<signal.h>
 
 int listener_d;
+int client_number = 0;
 
 struct connection_handler
 {
     int id;
     int connect_id;
 }con_handler[10];
+
+int init (void)
+{	
+    int counter;
+    for (counter = 0 ; counter<10 ; counter ++)
+    {
+	con_handler[counter].id = -1;
+	con_handler[counter].connect_id = -1;
+    }
+    return 0;
+}
 void handle_shutdown(int sig)
 {
     if(listener_d)
@@ -92,6 +104,7 @@ int say (int socket , char *s)
 
 int main(int argc, char *argv[])
 {
+    init();
     if (catch_signal(SIGINT,handle_shutdown) == -1)
         error("Can't set interrupt handler");
     listener_d = open_listener_socket();
@@ -110,12 +123,30 @@ int main(int argc, char *argv[])
         if (!fork())
         {
             close(listener_d);
+            client_number++;
+            if (client_number < 10)
+	    {
+		con_handler[client_number].id = client_number;
+		con_handler[client_number].connect_id = connect_d;
+	    }
+            //client_number++;
+	    printf("Client_Id %d",client_number);
+	    fflush(stdout);
             if (say(connect_d,"Internet Knock-Knock Protocol Server\r\nVersion 1.0\r\nKnock!Knock!\r\n>") != -1)
             {
-                read_in(connect_d,buf,sizeof(buf));
-		//flush();
-                say(connect_d,strcat(buf,"\r\n>"));
-		//fflush();
+		while (strncmp(buf,"end",3))
+		{
+			int i = 0;
+			
+			read_in(connect_d,buf,sizeof(buf));
+			//flush();
+			for (i=0;i<10;i++)
+			{
+			    if (!(con_handler[i].connect_id == -1))
+			    say(con_handler[i].connect_id,strcat(buf,"\r\n>"));
+			}
+			//fflush();
+		}
                 
             }
             close(connect_d);
