@@ -155,6 +155,7 @@ int main(int argc, char *argv[])
 			    printf("\ntalking to %d",i);
 			    fflush(stdout);
 			    say(head->connect_id,strcat(buf,"\r\n>"));
+			    printf("\nConnectionId is %d\n",head->connect_id);
 			    head++;
 			    //if (head->id == -1)
 			//	break;
