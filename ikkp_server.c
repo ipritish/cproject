@@ -6,32 +6,29 @@
 #include<arpa/inet.h>
 #include<errno.h>
 #include<signal.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 int listener_d;
-int client_number = 0;
+int *client_number;
 
-struct connection_handler
+typedef struct connection_handler
 {
     int id;
     int connect_id;
-}con_handler[10];
+}con_handle;
 
-int init (void)
-{	
-    int counter;
-    for (counter = 0 ; counter<10 ; counter ++)
-    {
-	con_handler[counter].id = -1;
-	con_handler[counter].connect_id = -1;
-    }
-    return 0;
-}
+con_handle *handler;
+con_handle *head;
+
 void handle_shutdown(int sig)
 {
     if(listener_d)
         close(listener_d);
     
     fprintf(stderr,"Bye!\n");
+    munmap(client_number, sizeof *client_number);
     exit(0);
 }
 
@@ -104,7 +101,11 @@ int say (int socket , char *s)
 
 int main(int argc, char *argv[])
 {
-    init();
+    //init();
+    client_number = (int *)mmap(NULL, sizeof *client_number,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS,-1,0);
+    head = (struct connection_handler *)mmap(NULL, (sizeof *handler)*10,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS,-1,0); 
+    handler = head;
+    *client_number = 0;
     if (catch_signal(SIGINT,handle_shutdown) == -1)
         error("Can't set interrupt handler");
     listener_d = open_listener_socket();
@@ -123,16 +124,22 @@ int main(int argc, char *argv[])
         if (!fork())
         {
             close(listener_d);
-            client_number++;
-            if (client_number < 10)
+	    //int temp = *client_number;
+	    //temp++;
+            //*client_number = temp;
+            if (*client_number < 10)
 	    {
-		con_handler[client_number].id = client_number;
-		con_handler[client_number].connect_id = connect_d;
+		handler->id = *client_number;
+		handler->connect_id = connect_d;
 	    }
+	    int temp = *client_number;
+            temp++;
+            *client_number = temp;
+	    handler = handler++;
             //client_number++;
-	    printf("Client_Id %d",client_number);
+	    printf("Client_Id %d",*client_number);
 	    fflush(stdout);
-            if (say(connect_d,"Internet Knock-Knock Protocol Server\r\nVersion 1.0\r\nKnock!Knock!\r\n>") != -1)
+            if (say(connect_d,"Hello to Chat World!\r\n>") != -1)
             {
 		while (strncmp(buf,"end",3))
 		{
@@ -140,11 +147,19 @@ int main(int argc, char *argv[])
 			
 			read_in(connect_d,buf,sizeof(buf));
 			//flush();
-			for (i=0;i<10;i++)
+			con_handle *temp_head;
+			for (i=0;i<*client_number;i++)
 			{
-			    if (!(con_handler[i].connect_id == -1))
-			    say(con_handler[i].connect_id,strcat(buf,"\r\n>"));
+			    //if (!(con_handler[i].connect_id == -1))
+			    temp_head = head;
+			    printf("\ntalking to %d",i);
+			    fflush(stdout);
+			    say(head->connect_id,strcat(buf,"\r\n>"));
+			    head++;
+			    //if (head->id == -1)
+			//	break;
 			}
+			head = temp_head;
 			//fflush();
 		}
                 
@@ -152,8 +167,11 @@ int main(int argc, char *argv[])
             close(connect_d);
             exit(0);
         }
+	//munmap(client_number, sizeof *client_number);
         close(connect_d);
     }
+
+    munmap(client_number, sizeof *client_number);
     
     return 0;
 }
