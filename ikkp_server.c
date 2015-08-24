@@ -118,7 +118,11 @@ int main(int argc, char *argv[])
     char buf[255];
     while(1)
     {
+	
         int connect_d = accept(listener_d,(struct sockaddr *)&client_addr,&address_size);
+	printf("connect_id %d\n",connect_d);
+	printf("listener_id %d\n",listener_d);
+	fflush(stdout);
         if (connect_d == -1)
             error("Can't open secondary socket");
         if (!fork())
@@ -137,7 +141,7 @@ int main(int argc, char *argv[])
             *client_number = temp;
 	    handler = handler++;
             //client_number++;
-	    printf("Client_Id %d",*client_number);
+	    //printf("Client_Id %d",*client_number);
 	    fflush(stdout);
             if (say(connect_d,"Hello to Chat World!\r\n>") != -1)
             {
@@ -152,10 +156,10 @@ int main(int argc, char *argv[])
 			{
 			    //if (!(con_handler[i].connect_id == -1))
 			    temp_head = head;
-			    printf("\ntalking to %d",i);
-			    fflush(stdout);
-			    say(head->connect_id,strcat(buf,"\r\n>"));
-			    printf("\nConnectionId is %d\n",head->connect_id);
+			    //printf("\ntalking to %d",i);
+			    //fflush(stdout);
+			    say(handler->connect_id,strcat(buf,"\r\n>"));
+			    //printf("\nConnectionId is %d\n",head->connect_id);
 			    head++;
 			    //if (head->id == -1)
 			//	break;
@@ -169,7 +173,7 @@ int main(int argc, char *argv[])
             exit(0);
         }
 	//munmap(client_number, sizeof *client_number);
-        close(connect_d);
+        //close(connect_d);
     }
 
     munmap(client_number, sizeof *client_number);
