@@ -11,16 +11,6 @@
 #include <sys/wait.h>
 
 int listener_d;
-int *client_number;
-
-typedef struct connection_handler
-{
-    int id;
-    int connect_id;
-}con_handle;
-
-con_handle *handler;
-con_handle *head;
 
 void handle_shutdown(int sig)
 {
@@ -28,7 +18,6 @@ void handle_shutdown(int sig)
         close(listener_d);
     
     fprintf(stderr,"Bye!\n");
-    munmap(client_number, sizeof *client_number);
     exit(0);
 }
 
@@ -101,13 +90,11 @@ int say (int socket , char *s)
 
 int main(int argc, char *argv[])
 {
-    //init();
-    client_number = (int *)mmap(NULL, sizeof *client_number,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS,-1,0);
-    head = (struct connection_handler *)mmap(NULL, (sizeof *handler)*10,PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS,-1,0); 
-    handler = head;
-    *client_number = 0;
     if (catch_signal(SIGINT,handle_shutdown) == -1)
         error("Can't set interrupt handler");
+    fd_set server;
+    fd_set read_fds;
+    int fd_max,i;
     listener_d = open_listener_socket();
     bind_to_port(listener_d,30000);
     if (listen(listener_d,10) == -1)
@@ -119,65 +106,26 @@ int main(int argc, char *argv[])
     while(1)
     {
 	
-        int connect_d = accept(listener_d,(struct sockaddr *)&client_addr,&address_size);
-	printf("connect_id %d\n",connect_d);
-	printf("listener_id %d\n",listener_d);
-	fflush(stdout);
-        if (connect_d == -1)
+        int  connect_d = accept(listener_d,(struct sockaddr *)&client_addr,&address_size);
+	if (connect_d == -1)
             error("Can't open secondary socket");
-        if (!fork())
-        {
-            close(listener_d);
-	    //int temp = *client_number;
-	    //temp++;
-            //*client_number = temp;
-            if (*client_number < 10)
-	    {
-		handler->id = *client_number;
-		handler->connect_id = connect_d;
-	    }
-	    int temp = *client_number;
-            temp++;
-            *client_number = temp;
-	    handler = handler++;
-            //client_number++;
-	    //printf("Client_Id %d",*client_number);
-	    fflush(stdout);
+	if(!fork())
+	{
+	    close(listener_d);
             if (say(connect_d,"Hello to Chat World!\r\n>") != -1)
             {
-		while (strncmp(buf,"end",3))
+		while(strncmp(buf,"end",3))
 		{
-			int i = 0;
-			
-			read_in(connect_d,buf,sizeof(buf));
-			//flush();
-			con_handle *temp_head;
-			for (i=0;i<*client_number;i++)
-			{
-			    //if (!(con_handler[i].connect_id == -1))
-			    temp_head = head;
-			    //printf("\ntalking to %d",i);
-			    //fflush(stdout);
-			    say(handler->connect_id,strcat(buf,"\r\n>"));
-			    //printf("\nConnectionId is %d\n",head->connect_id);
-			    head++;
-			    //if (head->id == -1)
-			//	break;
-			}
-			head = temp_head;
-			//fflush();
+		    read_in(connect_d,buf,sizeof(buf));
+	 	    say(connect_d,strcat(buf,"\r\n>"));
 		}
-                
             }
-            close(connect_d);
-            exit(0);
+	    close(connect_d);
+	    exit(0);
         }
-	//munmap(client_number, sizeof *client_number);
-        //close(connect_d);
-    }
+	close(connect_d);
 
-    munmap(client_number, sizeof *client_number);
-    
+    }
     return 0;
 }
 
